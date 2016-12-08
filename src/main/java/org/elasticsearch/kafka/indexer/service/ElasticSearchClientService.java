@@ -1,11 +1,15 @@
 package org.elasticsearch.kafka.indexer.service;
 
+import static org.elasticsearch.cluster.metadata.AliasAction.newAddAliasAction;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.cluster.metadata.AliasAction;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.kafka.indexer.exception.IndexerESException;
 import org.elasticsearch.kafka.indexer.exception.IndexerESNotRecoverableException;
 import org.slf4j.Logger;
@@ -126,6 +130,11 @@ public class ElasticSearchClientService {
 
 	public void addAliasToExistingIndex(String indexName, String aliasName) {
 		esTransportClient.admin().indices().prepareAliases().addAlias(indexName, aliasName).execute().actionGet();
+		logger.info("Added alias {} to index {} successfully" ,aliasName,indexName);
+	}
+	
+	public void addAliasWithRoutingToExistingIndex(String indexName, String aliasName, String field, String fieldValue) {
+		esTransportClient.admin().indices().prepareAliases().addAlias(indexName, aliasName, QueryBuilders.termQuery(field, fieldValue)).execute().actionGet();
 		logger.info("Added alias {} to index {} successfully" ,aliasName,indexName);
 	}
 
