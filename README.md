@@ -5,7 +5,7 @@
 
 ## Architecture of the kafka-elasticsearch-standalone-consumer [indexer]
 
-![](https://github.com/BigDataDevs/kafka-elasticsearch-consumer/tree/master/img/IndexerV2Design.jpg)
+![](https://github.com/BigDataDevs/kafka-elasticsearch-consumer/raw/master/img/IndexerV2Design.jpg)
 
 
 # Introduction
