@@ -158,10 +158,10 @@ public class ConsumerManager {
                     consumer.seek(topicPartition, startOption.getStartOffset());
                     break;
                 case EARLIEST:
-                    consumer.seekToBeginning(topicPartition);
+                    consumer.seekToBeginning(Arrays.asList(topicPartition));
                     break;
                 case LATEST:
-                    consumer.seekToEnd(topicPartition);
+                    consumer.seekToEnd(Arrays.asList(topicPartition));
                     break;
                 case RESTART:
                 default:
