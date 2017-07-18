@@ -30,15 +30,15 @@ public class ElasticSearchClientService {
     private static final Logger logger = LoggerFactory.getLogger(ElasticSearchClientService.class);
     public static final String CLUSTER_NAME = "cluster.name";
 
-    @Value("${esClusterName:elasticsearch}")
+    @Value("${elasticsearch.cluster.name:elasticsearch}")
     private String esClusterName;
-    @Value("#{'${esHostPortList:localhost:9300}'.split(',')}")
+    @Value("#{'${elasticsearch.hosts.list:localhost:9300}'.split(',')}")
     private List<String> esHostPortList;
     // sleep time in ms between attempts to index data into ES again
-    @Value("${esIndexingRetrySleepTimeMs:10000}")
+    @Value("${elasticsearch.indexing.retry.sleep.ms:10000}")
     private   int esIndexingRetrySleepTimeMs;
     // number of times to try to index data into ES if ES cluster is not reachable
-    @Value("${numberOfEsIndexingRetryAttempts:2}")
+    @Value("${elasticsearch.indexing.retry.attempts:2}")
     private   int numberOfEsIndexingRetryAttempts;
 
     // TODO add when we can inject partition number into each bean

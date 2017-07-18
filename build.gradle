@@ -21,8 +21,7 @@ group = 'org.elasticsearch.kafka.indexer'
 version = release + '.' + build
 mainClassName = "org.elasticsearch.kafka.indexer.KafkaESIndexerProcess"
 
-
-description = """kafka-elasticsearch-consumer"""
+description = "kafka-elasticsearch-consumer"
 def artifact_provider_url       = hasProperty('artifact_provider_url') ? artifact_provider_url : System.getenv('artifact_provider_url')
 def artifact_provider_user      = hasProperty('artifact_provider_user') ? artifact_provider_user : System.getenv('artifact_provider_user')
 def artifact_provider_org       = hasProperty('artifact_provider_org') ? artifact_provider_org : System.getenv('artifact_provider_org')
@@ -30,65 +29,74 @@ def artifact_provider_secret    = hasProperty('artifact_provider_secret') ? arti
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-
-
 repositories {
     mavenLocal()
     mavenCentral()
 }
 
+ext {
+    spring_version = '4.3.8.RELEASE'
+    slf4j_version = '1.7.25'
+    logback_version = '1.2.3'
+    kafka_version = '0.10.2.1'
+    elasticsearch_version = '5.5.0'
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.name == 'log4j') {
+            // https://mvnrepository.com/artifact/org.slf4j/log4j-over-slf4j
+            details.useTarget "org.slf4j:log4j-over-slf4j:$slf4j_version"
+        }
+        if (details.requested.name == 'commons-logging') {
+            // https://mvnrepository.com/artifact/org.slf4j/jcl-over-slf4j
+            details.useTarget "org.slf4j:jcl-over-slf4j:$slf4j_version"
+        }
+    }
+}
+
 dependencies {
-    //compile group: 'org.elasticsearch', name: 'elasticsearch', version: '1.5.1'
-    compile group: 'org.elasticsearch', name: 'elasticsearch', version: '5.5.0'
-    compile group: 'org.elasticsearch.client', name: 'transport', version: '5.5.0'
-    compile group: 'org.springframework.data', name: 'spring-data-elasticsearch', version: '1.3.2.RELEASE'
+    // https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch
+    compile group: 'org.elasticsearch', name: 'elasticsearch', version: elasticsearch_version
+    // https://mvnrepository.com/artifact/org.elasticsearch.client/transport
+    compile group: 'org.elasticsearch.client', name: 'transport', version: elasticsearch_version
+    // https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients
+    compile group: 'org.apache.kafka', name: 'kafka-clients', version: kafka_version
+    // https://mvnrepository.com/artifact/com.google.guava/guava
+    compile group: 'com.google.guava', name: 'guava', version: '19.0'
 
-    compile group: 'org.apache.kafka', name: 'kafka_2.10', version: '0.10.0.1'
-    compile group: 'com.netflix.curator', name: 'curator-framework', version: '1.0.1'
-    compile group: 'org.codehaus.jackson', name: 'jackson-mapper-asl', version: '1.9.3'
-    compile group: 'org.scala-lang', name: 'scala-library', version: '2.10.0'
-    compile(group: 'log4j', name: 'log4j', version: '1.2.16') {
-        exclude(module: 'mail')
-        exclude(module: 'jms')
-        exclude(module: 'jmxtools')
-        exclude(module: 'jmxri')
-    }
-    compile group: 'org.xerial.snappy', name: 'snappy-java', version: '1.0.4.1'
-    compile(group: 'org.apache.zookeeper', name: 'zookeeper', version: '3.3.4') {
-        exclude(module: 'log4j')
-        exclude(module: 'jline')
-    }
-    //
-    def spring_security_version = "4.0.3.RELEASE"
-    compile group: 'org.springframework', name: 'spring-context', version: spring_security_version
-    compile group: 'org.springframework', name: 'spring-core', version: spring_security_version
-    compile group: 'org.springframework', name: 'spring-oxm', version: spring_security_version
+    // https://mvnrepository.com/artifact/org.springframework/
+    compile group: 'org.springframework', name: 'spring-core', version: spring_version
+    compile group: 'org.springframework', name: 'spring-context', version: spring_version
 
-    testCompile group: 'org.springframework', name: 'spring-test', version: spring_security_version
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    compile group: 'org.slf4j', name: 'slf4j-api', version: slf4j_version
+    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-to-slf4j
+    compile group: 'org.apache.logging.log4j', name: 'log4j-to-slf4j', version: '2.8.2'
+    // https://mvnrepository.com/artifact/ch.qos.logback/logback-core
+    compile group: 'ch.qos.logback', name: 'logback-core', version: logback_version
+    // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
+    compile group: 'ch.qos.logback', name: 'logback-classic', version: logback_version
+    // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
 
-    compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.3'
-    compile group: 'ch.qos.logback', name: 'logback-core', version: '1.1.3'
-    compile group: 'junit', name: 'junit', version: '4.12'
-    compile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
-    compile group: 'org.codehaus.janino', name: 'janino', version: '2.7.8'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
+    testCompile group: 'org.springframework', name: 'spring-test', version: spring_version
 }
 
 processResources {
     filter(org.apache.tools.ant.filters.ReplaceTokens, tokens: [version: project.version])
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.12'
-}
-
 jar {
-	from files(sourceSets.main.output.classesDir)
-    exclude 'config'
-    exclude 'log4j.xml'
-    exclude '*.template'
+    exclude ("config")
     manifest {
-        attributes("Implementation-Title": "kafka-elasticsearch-consumer", "Implementation-Version": version)
-		attributes 'Main-class':'org.elasticsearch.kafka.indexer.KafkaESIndexerProcess'
+        attributes(
+                "Implementation-Title": rootProject.name,
+                "Implementation-Version": version,
+                "Build-Time": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        )
     }
 }
 

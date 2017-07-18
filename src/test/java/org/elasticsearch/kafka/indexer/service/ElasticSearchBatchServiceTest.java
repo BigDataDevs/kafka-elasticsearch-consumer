@@ -1,7 +1,6 @@
 package org.elasticsearch.kafka.indexer.service;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Iterator;
 
@@ -12,7 +11,6 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.transport.NoNodeAvailableException;
-import org.elasticsearch.kafka.indexer.exception.IndexerESException;
 import org.elasticsearch.kafka.indexer.exception.IndexerESNotRecoverableException;
 import org.elasticsearch.kafka.indexer.exception.IndexerESRecoverableException;
 import org.elasticsearch.rest.RestStatus;
@@ -23,7 +21,6 @@ import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.test.AssertThrows;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ElasticSearchBatchServiceTest {

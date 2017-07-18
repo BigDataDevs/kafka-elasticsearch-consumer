@@ -21,9 +21,9 @@ public class SimpleMessageHandlerImpl implements IMessageHandler {
 
 	@Autowired
 	private ElasticSearchBatchService elasticSearchBatchService = null;
-	@Value("${esIndexName:my_index}")
+	@Value("${elasticsearch.index.name:my_index}")
 	private String indexName;
-	@Value("${esIndexType:varnish}")
+	@Value("${elasticsearch.index.type:varnish}")
 	private String indexType;
 
 	@Override

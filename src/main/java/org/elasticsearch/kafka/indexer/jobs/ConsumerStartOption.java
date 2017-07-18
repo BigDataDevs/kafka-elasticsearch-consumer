@@ -1,5 +1,6 @@
 package org.elasticsearch.kafka.indexer.jobs;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +53,10 @@ public class ConsumerStartOption {
 		}
 	}
 
-	public static Map<Integer, ConsumerStartOption> fromFile(File configFile) throws IllegalArgumentException {
+	public static Map<Integer, ConsumerStartOption> fromFile(String configFilePath) throws IllegalArgumentException {
 		Map<Integer, ConsumerStartOption> config = new HashMap<>();
+		if (!StringUtils.isEmpty(configFilePath)) {
+			File configFile = new File(configFilePath);
 		if (configFile.exists()) {
 			try {
 				List<String> lines = Files.readAllLines(configFile.toPath());
@@ -73,6 +76,9 @@ public class ConsumerStartOption {
 		} else {
 			logger.warn("Consumer start options configuration file '"
 					+ configFile.getPath() + "' doesn't exist. Consumer will use 'RESTART' option by default");
+		}
+		} else {
+			logger.info("Consumer start options configuration file is not defined. Consumer will use 'RESTART' option by default");
 		}
 
 		//check for default option

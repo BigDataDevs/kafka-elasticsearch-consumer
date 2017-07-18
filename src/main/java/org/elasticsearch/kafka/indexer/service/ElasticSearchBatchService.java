@@ -32,7 +32,7 @@ public class ElasticSearchBatchService {
     private BulkRequestBuilder bulkRequestBuilder;
     private Set<String> indexNames = new HashSet<>();
    
-    @Value("${sleepBetweenESReconnectAttempts:10000}")
+    @Value("${elasticsearch.reconnect.attempt.wait.ms:10000}")
     private long sleepBetweenESReconnectAttempts;
     
     @Autowired

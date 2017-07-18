@@ -15,8 +15,12 @@ import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -32,18 +36,18 @@ public class ConsumerManager {
     private static final Logger logger = LoggerFactory.getLogger(ConsumerManager.class);
     private static final String KAFKA_CONSUMER_THREAD_NAME_FORMAT = "kafka-elasticsearch-consumer-thread-%d";
 
-    @Value("${topic:testTopic}")
+    @Value("${kafka.consumer.source.topic:testTopic}")
     private String kafkaTopic;
-    @Value("${consumerGroupName:kafka-elasticsearch-consumer}")
+    @Value("${kafka.consumer.group.name:kafka-elasticsearch-consumer}")
     private String consumerGroupName;
-    @Value("${consumerInstanceName:instance1}")
+    @Value("${application.id:instance1}")
     private String consumerInstanceName;
     @Value("${kafka.consumer.brokers.list:localhost:9092}")
     private String kafkaBrokersList;
-    @Value("${consumerSessionTimeoutMs:10000}")
+    @Value("${kafka.consumer.session.timeout.ms:10000}")
     private int consumerSessionTimeoutMs;
     // interval in MS to poll Kafka brokers for messages, in case there were no messages during the previous interval
-    @Value("${kafkaPollIntervalMs:10000}")
+    @Value("${kafka.consumer.poll.interval.ms:10000}")
     private long kafkaPollIntervalMs;
     // Max number of bytes to fetch in one poll request PER partition
     // default is 1M = 1048576
@@ -51,7 +55,7 @@ public class ConsumerManager {
     private int maxPartitionFetchBytes;
     // if set to TRUE - enable logging timings of the event processing
     // TODO add implementation to use this flag
-    @Value("${isPerfReportingEnabled:false}")
+    @Value("${is.perf.reporting.enabled:false}")
     private boolean isPerfReportingEnabled;
 
     @Value("${kafka.consumer.pool.count:3}")
@@ -61,7 +65,6 @@ public class ConsumerManager {
     @Qualifier("messageHandler")
     private ObjectFactory<IMessageHandler> messageHandlerObjectFactory;
 
-    @Value("${config.dir}/kafka-es-indexer-start-options.config")
     private String consumerStartOptionsConfig;
 
     private ExecutorService consumersThreadPool = null;
@@ -93,7 +96,7 @@ public class ConsumerManager {
         kafkaProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         // TODO make a dynamic property determined from the mockedKafkaCluster metadata
         int consumerPoolCount = kafkaConsumerPoolCount;
-        consumerStartOptions = ConsumerStartOption.fromFile(new File(consumerStartOptionsConfig));
+        consumerStartOptions = ConsumerStartOption.fromFile(consumerStartOptionsConfig);
         determineOffsetForAllPartitionsAndSeek();
         initConsumers(consumerPoolCount);
     }
