@@ -70,7 +70,7 @@ public class ConsumerWorker implements Runnable {
 					data.put("offset", record.offset());
 					data.put("value", record.value());
 
-					logger.debug("consumerId={}; recieved record: {}", consumerId, data);
+					logger.debug("consumerId={}; received record: {}", consumerId, data);
 					if (isPollFirstRecord) {
 						isPollFirstRecord = false;
 						logger.info("Start offset for partition {} in this poll : {}", record.partition(), record.offset());
@@ -85,9 +85,8 @@ public class ConsumerWorker implements Runnable {
 					} catch (Exception e) {
 						numSkippedIndexingMessages++;
 
-						logger.error("ERROR processing message {} - skipping it: {}", record.offset(), record.value(),
-								e);
-						FailedEventsLogger.logFailedToTransformEvent(record.offset(), e.getMessage(), record.value());
+						logger.error("ERROR processing message {} - skipping it: {}", record.offset(), record.value(), e);
+						FailedEventsLogger.logFailedToTransformEvent(record.offset(), e, record.value());
 					}
 
 
@@ -117,20 +116,13 @@ public class ConsumerWorker implements Runnable {
 
 			}
 		} catch (WakeupException e) {
-			logger.warn("ConsumerWorker [consumerId={}] got WakeupException - exiting ... Exception: {}", consumerId,
-					e.getMessage());
+			logger.warn("ConsumerWorker [consumerId={}] got WakeupException - exiting ... Exception: {}", consumerId, e);
 			// ignore for shutdown
-		} 
-		
-		catch (IndexerESNotRecoverableException e){
-			logger.error("ConsumerWorker [consumerId={}] got IndexerESNotRecoverableException - exiting ... Exception: {}", consumerId,
-					e.getMessage());
-		}
-		catch (Exception e) {
-			// TODO handle all kinds of Kafka-related exceptions here - to stop
-			// / re-init the consumer when needed
-			logger.error("ConsumerWorker [consumerId={}] got Exception - exiting ... Exception: {}", consumerId,
-					e.getMessage());
+		} catch (IndexerESNotRecoverableException e){
+			logger.error("ConsumerWorker [consumerId={}] got IndexerESNotRecoverableException - exiting ... Exception: {}", consumerId, e);
+		} catch (Throwable e) {
+			// TODO handle all kinds of Kafka-related exceptions here - to stop / re-init the consumer when needed
+			logger.error("ConsumerWorker [consumerId={}] got Exception - exiting ... Exception: {}", consumerId, e);
 		} finally {
 			logger.warn("ConsumerWorker [consumerId={}] is shutting down ...", consumerId);
 			consumer.close();

@@ -15,9 +15,9 @@ public class FailedEventsLogger {
 		logger.error("Error posting event to ES: REST response: {}, ERROR: {}", restResponse, errorMsg);
 	}
 
-	public static void logFailedToTransformEvent(long offset, String errorMsg, String event){
+	public static void logFailedToTransformEvent(long offset, Throwable e, String event){
 		logger.error("Error transforming event: OFFSET: {}, ERROR: {}, EVENT: {}", 
-				offset, errorMsg, event);
+				offset, e.getMessage(), event, e);
 	}
 	public static void logFailedEvent(long startOffset,long endOffset, int partition ,String errorMsg, String event){
 		logger.error("Error transforming event: OFFSET: {} --> {} PARTITION: {},EVENT: {},ERROR: {} ",

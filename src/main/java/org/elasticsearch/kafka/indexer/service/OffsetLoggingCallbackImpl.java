@@ -23,10 +23,16 @@ public class OffsetLoggingCallbackImpl implements OffsetCommitCallback, Consumer
         if (exception == null) {
             offsets.forEach((topicPartition, offsetAndMetadata) -> {
                 partitionOffsetMap.computeIfPresent(topicPartition, (k, v) -> offsetAndMetadata);
-                logger.info("Offset position during the commit for consumerId : {}, partition : {}, offset : {}", Thread.currentThread().getName(), topicPartition.partition(), offsetAndMetadata.offset());
+                logger.info("onComplete(): offset position during commit for consumerId : {}, partition : {}, offset : {}",
+                        Thread.currentThread().getName(), topicPartition.partition(), offsetAndMetadata.offset());
             });
         } else {
-            offsets.forEach((topicPartition, offsetAndMetadata) -> logger.error("Offset commit error, and partition offset info : {}, partition : {}, offset : {}", exception.getMessage(), topicPartition.partition(), offsetAndMetadata.offset()));
+            offsets.forEach((topicPartition, offsetAndMetadata) ->
+                    logger.error("onComplete(): offset position during commit when exception != null:  error: {}, " +
+                                    "consumerId : {}, partition : {}, offset : {}",
+                            exception.getMessage(), Thread.currentThread().getName(),
+                            topicPartition.partition(), offsetAndMetadata.offset(), exception)
+            );
         }
     }
 
