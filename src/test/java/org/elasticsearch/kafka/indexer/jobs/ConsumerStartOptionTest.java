@@ -1,82 +1,98 @@
-/**
-  * @author marinapopova
-  * Apr 2, 2018
- */
 package org.elasticsearch.kafka.indexer.jobs;
-
-import static org.junit.Assert.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.elasticsearch.kafka.indexer.jobs.ConsumerStartOption.StartFrom;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
  * @author marinapopova
- *
+ * Apr 2, 2018
  */
 public class ConsumerStartOptionTest {
 
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@Before
-	public void setUp() throws Exception {
-	}
-
-	/**
-	 * Test method for {@link org.elasticsearch.kafka.indexer.jobs.ConsumerStartOption#fromFile(java.lang.String)}.
-	 */
 	@Test
-	public void testFromFile_restart() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromFile(
-			"src/test/resources/test-start-options-restart.config");
+	public void testRestartOption() {
+		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("RESTART");
 		Assert.assertNotNull(configMap);
-		Assert.assertTrue(configMap.isEmpty());
+		Assert.assertEquals(configMap.size(), 1);
+		Assert.assertEquals(configMap.get(ConsumerStartOption.ALL_PARTITIONS), ConsumerStartOption.RESTART_OPTION);
 	}
 
 	@Test
-	public void testFromFile_empty() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromFile("");
-		Assert.assertNotNull(configMap);
-		Assert.assertTrue(configMap.isEmpty());
-	}
-
-	@Test
-	public void testFromFile_earliest() {
+	public void testEarliestOption() {
 		Map<Integer, ConsumerStartOption> expectedMap = new HashMap<>();
-		expectedMap.put(ConsumerStartOption.DEFAULT, 
-			new ConsumerStartOption(ConsumerStartOption.DEFAULT, StartFrom.EARLIEST, 0L));
-		Map<Integer, ConsumerStartOption> resultMap = ConsumerStartOption.fromFile(
-			"src/test/resources/test-start-options-earliest.config");
+		expectedMap.put(ConsumerStartOption.ALL_PARTITIONS,
+				new ConsumerStartOption(ConsumerStartOption.ALL_PARTITIONS, StartFrom.EARLIEST, 0L));
+		Map<Integer, ConsumerStartOption> resultMap = ConsumerStartOption.fromConfig("EARLIEST");
 		Assert.assertNotNull(resultMap);
-		Assert.assertTrue(expectedMap.equals(resultMap));
+		Assert.assertEquals(expectedMap, resultMap);
 	}
 
 	@Test
-	public void testFromFile_custom() {
+	public void testLatestOption() {
 		Map<Integer, ConsumerStartOption> expectedMap = new HashMap<>();
-		expectedMap.put(ConsumerStartOption.DEFAULT, 
-			new ConsumerStartOption(ConsumerStartOption.DEFAULT, StartFrom.EARLIEST, 0l));
+		expectedMap.put(ConsumerStartOption.ALL_PARTITIONS,
+				new ConsumerStartOption(ConsumerStartOption.ALL_PARTITIONS, StartFrom.LATEST, 0L));
+		Map<Integer, ConsumerStartOption> resultMap = ConsumerStartOption.fromConfig("LATEST");
+		Assert.assertNotNull(resultMap);
+		Assert.assertEquals(expectedMap, resultMap);
+	}
+
+	@Test
+	public void testCustomOption() {
+		Map<Integer, ConsumerStartOption> expectedMap = new HashMap<>();
+		expectedMap.put(ConsumerStartOption.ALL_PARTITIONS,
+				new ConsumerStartOption(ConsumerStartOption.ALL_PARTITIONS, StartFrom.CUSTOM, 222L));
+		Map<Integer, ConsumerStartOption> resultMap = ConsumerStartOption.fromConfig("CUSTOM:222");
+		Assert.assertNotNull(resultMap);
+		Assert.assertEquals(expectedMap, resultMap);
+	}
+
+	@Test
+	public void testWrongOption() {
+		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("sferggbgg");
+		Assert.assertNotNull(configMap);
+		Assert.assertEquals(configMap.size(), 1);
+		Assert.assertEquals(configMap.get(ConsumerStartOption.ALL_PARTITIONS), ConsumerStartOption.RESTART_OPTION);
+	}
+
+	@Test
+	public void testCustomOptionsFromFile() {
+		Map<Integer, ConsumerStartOption> expectedMap = new HashMap<>();
 		expectedMap.put(0, new ConsumerStartOption(0, StartFrom.CUSTOM, 10L));
 		expectedMap.put(1, new ConsumerStartOption(1, StartFrom.CUSTOM, 20L));
-		Map<Integer, ConsumerStartOption> resultMap = ConsumerStartOption.fromFile(
-			"src/test/resources/test-start-options-custom.config");
+		Map<Integer, ConsumerStartOption> resultMap = ConsumerStartOption.fromConfig(
+				"src/test/resources/test-start-options-custom.config");
 		Assert.assertNotNull(resultMap);
-		Assert.assertTrue(expectedMap.equals(resultMap));
+		Assert.assertEquals(expectedMap, resultMap);
 	}
 
 	@Test
-	public void testFromFile_custom_with_restart() {
-		// if there are mixed options - RESTARt for some partitions, but not RESTART for default option - 
-		// still should be treated as a RESTART, and, thus, the map shoudl be empty
-		Map<Integer, ConsumerStartOption> resultMap = ConsumerStartOption.fromFile(
-			"src/test/resources/test-start-options-custom-with-restart.config");
-		Assert.assertNotNull(resultMap);
-		Assert.assertTrue(resultMap.isEmpty());
+	public void testCustomOptionsFromMalformedFile() {
+		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig(
+				"src/test/resources/test-start-options-custom-malformed.config");
+		Assert.assertNotNull(configMap);
+		Assert.assertEquals(configMap.size(), 1);
+		Assert.assertEquals(configMap.get(ConsumerStartOption.ALL_PARTITIONS), ConsumerStartOption.RESTART_OPTION);
 	}
 
+	@Test
+	public void testCustomOptionsFromEmptyFile() {
+		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig(
+				"src/test/resources/test-start-options-custom-empty.config");
+		Assert.assertNotNull(configMap);
+		Assert.assertEquals(configMap.size(), 1);
+		Assert.assertEquals(configMap.get(ConsumerStartOption.ALL_PARTITIONS), ConsumerStartOption.RESTART_OPTION);
+	}
+
+	@Test
+	public void testEmptyOption() {
+		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("");
+		Assert.assertNotNull(configMap);
+		Assert.assertEquals(configMap.size(), 1);
+		Assert.assertEquals(configMap.get(ConsumerStartOption.ALL_PARTITIONS), ConsumerStartOption.RESTART_OPTION);
+	}
 }

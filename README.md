@@ -80,9 +80,15 @@ You can specify your own logback config file via `-Dlogback.configurationFile=/a
 Indexer application Spring configuration is specified in the kafka-es-context-public.xml:
 [kafka-es-context.xml](src/main/resources/spring/kafka-es-context-public.xml)
 
-Consumer start options configuration file is specified in kafka-es-indexer-start-options.config - by default `RESTART` option is used for all partitions:
-[kafka-es-indexer-start-options.config](src/main/resources/config/kafka-es-indexer-start-options.config).
-You can specify you own configuration file via `-Doffsets.config.path=/abs-path/your-kafka-es-indexer-start-options.config`
+Consumer start options can be specified with system property `offsets.config.path`. The value of this property can be `RESTART`, `EARLIEST`, `LATEST`, `CUSTOM:start_offset` which applied for all partitions or path to file where custom offset options can be specified per partition. (Look to [kafka-es-indexer-start-options.config](src/main/resources/config/kafka-es-indexer-start-options.config)).
+By default `RESTART` option is used for all partitions.
+
+Examples:
+- `-Doffsets.config.path=RESTART`
+- `-Doffsets.config.path=LATEST`
+- `-Doffsets.config.path=EARLIEST`
+- `-Doffsets.config.path=CUSTOM:500`
+- `-Doffsets.config.path=/abs-path/your-kafka-es-indexer-custom-start-options.config`
 
 # Customization
 
