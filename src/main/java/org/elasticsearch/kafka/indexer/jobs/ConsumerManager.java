@@ -7,6 +7,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.elasticsearch.kafka.indexer.jobs.ConsumerStartOption.StartOption;
 import org.elasticsearch.kafka.indexer.service.IMessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +19,13 @@ import org.springframework.beans.factory.annotation.Value;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -103,8 +110,7 @@ public class ConsumerManager {
         consumerKafkaPropertyPrefix = consumerKafkaPropertyPrefix.endsWith(PROPERTY_SEPARATOR) ? consumerKafkaPropertyPrefix : consumerKafkaPropertyPrefix + PROPERTY_SEPARATOR;
         extractAndSetKafkaProperties(applicationProperties, kafkaProperties, consumerKafkaPropertyPrefix);
         int consumerPoolCount = kafkaConsumerPoolCount;
-        Map<Integer, ConsumerStartOption> consumerStartOptions = ConsumerStartOption.fromConfig(consumerStartOption, consumerCustomStartOptionsFilePath);
-        determineOffsetForAllPartitionsAndSeek(consumerStartOptions, null);
+        determineOffsetForAllPartitionsAndSeek(ConsumerStartOption.getStartOption(consumerStartOption), null);
         initConsumers(consumerPoolCount);
     }
 
@@ -146,10 +152,10 @@ public class ConsumerManager {
         logger.info("shutdownConsumers() finished");
     }
 
-    public void determineOffsetForAllPartitionsAndSeek(Map<Integer, ConsumerStartOption> consumerStartOptions, Consumer<String, String> consumer) {
+    public void determineOffsetForAllPartitionsAndSeek(StartOption startOption, Consumer<String, String> consumer) {
         logger.info("in determineOffsetForAllPartitionsAndSeek(): ");
-        if (consumerStartOptions.isEmpty() || consumerStartOptions.values().contains(ConsumerStartOption.RESTART_OPTION)) {
-        	logger.info("consumerStartOptions is empty or set to RESTART - consumers will start from RESTART for all partitions" );
+        if (startOption == StartOption.RESTART) {
+        	logger.info("startOption is empty or set to RESTART - consumers will start from RESTART for all partitions");
         	return;
         }
 
@@ -167,53 +173,46 @@ public class ConsumerManager {
             offsetsBeforeSeek.put(topicPartition, consumer.position(topicPartition));
         }
 
-        ConsumerStartOption defaultStartOption = consumerStartOptions.get(ConsumerStartOption.ALL_PARTITIONS);
-        if (defaultStartOption == null) {
-            //apply custom start offset options to partitions from file
-            if (consumerStartOptions.size() == assignedTopicPartitions.size()) {
-                for (TopicPartition topicPartition : assignedTopicPartitions) {
-                    ConsumerStartOption startOption = consumerStartOptions.get(topicPartition.partition());
-                    if (startOption == null) {
-                        logger.error("There is no custom start option for partition {}. Consumers will start from RESTART for all partitions", topicPartition.partition());
-                        consumer.close();
-                        return;
-                    }
+        switch (startOption) {
+            case CUSTOM:
+                Map<Integer, Long> customOffsetsMap = ConsumerStartOption.getCustomStartOffsets(consumerCustomStartOptionsFilePath);
 
-                    consumer.seek(topicPartition, startOption.getStartOffset());
-                }
-
-                consumer.commitSync();
-                for (TopicPartition topicPartition : assignedTopicPartitions) {
-                    logger.info("Offset for partition: {} is moved from : {} to {}",
-                            topicPartition.partition(), offsetsBeforeSeek.get(topicPartition), consumer.position(topicPartition));
-                }
-            } else {
-                logger.error("Defined custom consumer start options has missed partitions. Expected {} partitions but was defined {}. Consumers will start from RESTART for all partitions",
-                        assignedTopicPartitions.size(), consumerStartOptions.size());
-            }
-        } else {
-            // handling LATEST, EARLIEST, or CUSTOM options for all partitions
-            switch (defaultStartOption.getStartFrom()) {
-                case CUSTOM:
+                //apply custom start offset options to partitions from file
+                if (customOffsetsMap.size() == assignedTopicPartitions.size()) {
                     for (TopicPartition topicPartition : assignedTopicPartitions) {
-                        consumer.seek(topicPartition, defaultStartOption.getStartOffset());
+                        Long startOffset = customOffsetsMap.get(topicPartition.partition());
+                        if (startOffset == null) {
+                            logger.error("There is no custom start option for partition {}. Consumers will start from RESTART for all partitions", topicPartition.partition());
+                            consumer.close();
+                            return;
+                        }
+
+                        consumer.seek(topicPartition, startOffset);
                     }
-                    break;
-                case EARLIEST:
-                    consumer.seekToBeginning(assignedTopicPartitions);
-                    break;
-                case LATEST:
-                    consumer.seekToEnd(assignedTopicPartitions);
-                    break;
-                default:
-                    break;
-            }
-            consumer.commitSync();
-            for (TopicPartition topicPartition : assignedTopicPartitions) {
-                logger.info("Offset for partition: {} is moved from : {} to {}",
-                        topicPartition.partition(), offsetsBeforeSeek.get(topicPartition), consumer.position(topicPartition));
-            }
+                } else {
+                    logger.error("Defined custom consumer start options has missed partitions. Expected {} partitions but was defined {}. Consumers will start from RESTART for all partitions",
+                            assignedTopicPartitions.size(), customOffsetsMap.size());
+                    consumer.close();
+                    return;
+                }
+                break;
+            case EARLIEST:
+                consumer.seekToBeginning(assignedTopicPartitions);
+                break;
+            case LATEST:
+                consumer.seekToEnd(assignedTopicPartitions);
+                break;
+            default:
+                consumer.close();
+                return;
         }
+
+        consumer.commitSync();
+        for (TopicPartition topicPartition : assignedTopicPartitions) {
+            logger.info("Offset for partition: {} is moved from : {} to {}",
+                    topicPartition.partition(), offsetsBeforeSeek.get(topicPartition), consumer.position(topicPartition));
+        }
+
         consumer.close();
     }
 

@@ -3,6 +3,7 @@ package org.elasticsearch.kafka.indexer.jobs;
 import org.apache.kafka.clients.consumer.MockConsumer;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
+import org.elasticsearch.kafka.indexer.jobs.ConsumerStartOption.StartOption;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,6 +35,7 @@ public class ConsumerManagerTest {
 	public static void setUp() {
 		CONSUMER_MANAGER.setKafkaPollIntervalMs(100L);
 		CONSUMER_MANAGER.setKafkaTopic(TOPIC);
+		CONSUMER_MANAGER.setConsumerCustomStartOptionsFilePath(null);
 
 		PARTITIONS.add(new TopicPartition(TOPIC, 0));
 		PARTITIONS.add(new TopicPartition(TOPIC, 1));
@@ -49,9 +51,8 @@ public class ConsumerManagerTest {
 
 	@Test
 	public void testRestartOffsets() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("RESTART", null);
 		CONSUMER.rebalance(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.RESTART, CONSUMER);
 		for (TopicPartition topicPartition: PARTITIONS) {
 			Assert.assertEquals(BEGINNING_OFFSET_POSITION, CONSUMER.position(topicPartition));
 		}
@@ -59,9 +60,8 @@ public class ConsumerManagerTest {
 
 	@Test
 	public void testAllLatestOffsets() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("LATEST", null);
 		CONSUMER.rebalance(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.LATEST, CONSUMER);
 		for (TopicPartition topicPartition: PARTITIONS) {
 			Assert.assertEquals(END_OFFSET_POSITION, CONSUMER.position(topicPartition));
 		}
@@ -69,10 +69,9 @@ public class ConsumerManagerTest {
 
 	@Test
 	public void testAllEarliestOffsets() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("EARLIEST", null);
 		CONSUMER.rebalance(PARTITIONS);
 		CONSUMER.seekToEnd(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.EARLIEST, CONSUMER);
 		for (TopicPartition topicPartition: PARTITIONS) {
 			Assert.assertEquals(BEGINNING_OFFSET_POSITION, CONSUMER.position(topicPartition));
 		}
@@ -80,9 +79,8 @@ public class ConsumerManagerTest {
 
 	@Test
 	public void testCustomOffsetsNoConfig() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("CUSTOM", null);
 		CONSUMER.rebalance(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.CUSTOM, CONSUMER);
 		for (TopicPartition topicPartition: PARTITIONS) {
 			Assert.assertEquals(BEGINNING_OFFSET_POSITION, CONSUMER.position(topicPartition));
 		}
@@ -91,11 +89,9 @@ public class ConsumerManagerTest {
 	@Test
 	public void testCustomOffsetsFromFileNotEnoughPartitions() {
 		//Test custom start options and with not enough partitions defined, so 'RESTART' option will be used for all partitions
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("CUSTOM",
-				"src/test/resources/test-start-options-custom.config");
-		Assert.assertEquals(configMap.size(), 2);
+		CONSUMER_MANAGER.setConsumerCustomStartOptionsFilePath("src/test/resources/test-start-options-custom.properties");
 		CONSUMER.rebalance(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.CUSTOM, CONSUMER);
 		for (TopicPartition topicPartition: PARTITIONS) {
 			Assert.assertEquals(BEGINNING_OFFSET_POSITION, CONSUMER.position(topicPartition));
 		}
@@ -103,12 +99,12 @@ public class ConsumerManagerTest {
 
 	@Test
 	public void testCustomOffsetsFromFile() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("CUSTOM",
-				"src/test/resources/test-start-options-custom-5-partitions.config");
+		Map<Integer, Long> expectedOffsets = ConsumerStartOption.getCustomStartOffsets("src/test/resources/test-start-options-custom-5-partitions.properties");
+		CONSUMER_MANAGER.setConsumerCustomStartOptionsFilePath("src/test/resources/test-start-options-custom-5-partitions.properties");
 		CONSUMER.rebalance(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.CUSTOM, CONSUMER);
 		for (TopicPartition topicPartition: PARTITIONS) {
-			Assert.assertEquals(configMap.get(topicPartition.partition()).getStartOffset(), CONSUMER.position(topicPartition));
+			Assert.assertEquals(expectedOffsets.get(topicPartition.partition()).longValue(), CONSUMER.position(topicPartition));
 		}
 	}
 }
