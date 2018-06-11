@@ -24,6 +24,7 @@
     />
 
     <bean id="kafkaESConsumerManager" class="org.elasticsearch.kafka.indexer.jobs.ConsumerManager"
-          p:consumerStartOptionsConfig="${offsets.config.path:RESTART}"/>
+          p:consumerStartOption="${consumer.start.option:RESTART}"
+          p:consumerCustomStartOptionsFilePath="${consumer.custom.start.options.file:}"/>
 
 </beans>

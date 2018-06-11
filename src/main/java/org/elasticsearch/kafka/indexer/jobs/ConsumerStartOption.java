@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,108 +21,108 @@ import java.util.regex.Pattern;
 public class ConsumerStartOption {
 	private static final Logger logger = LoggerFactory.getLogger(ConsumerStartOption.class);
 	public static final int ALL_PARTITIONS = -1;
-	public static final ConsumerStartOption RESTART_OPTION = new ConsumerStartOption(ALL_PARTITIONS, StartFrom.RESTART, 0L);
-	private static final Pattern OPTION_REGEX = Pattern.compile("^(RESTART$|LATEST$|EARLIEST$)|(CUSTOM\\:(\\d+)$)|((\\d+)=(\\d+)$)", Pattern.CASE_INSENSITIVE);
+	public static final ConsumerStartOption RESTART_OPTION = new ConsumerStartOption(StartFrom.RESTART);
+	private static final Pattern CUSTOM_OPTION_REGEX = Pattern.compile("^(\\d+)=(\\d+)$");
+	private static final String RESTART_BY_DEFAULT_MSG = "Consumer will use 'RESTART' option by default";
 
 	private int partition;
 	private StartFrom startFrom;
 	private long startOffset;
 
+	/**
+	 * Constructor for start option
+	 * @param partition number of partition
+	 * @param startFrom start option
+	 * @param startOffset start offset
+	 */
 	public ConsumerStartOption(int partition, StartFrom startFrom, long startOffset) {
 		this.partition = partition;
 		this.startFrom = startFrom;
 		this.startOffset = startOffset;
 	}
 
-	public ConsumerStartOption(String property) throws IllegalArgumentException {
-		if (property == null) {
+	/**
+	 * Constructor for custom start option in next format: partition=start_offset
+	 * @param customOptionStr
+	 * @throws IllegalArgumentException
+	 */
+	public ConsumerStartOption(String customOptionStr) throws IllegalArgumentException {
+		if (customOptionStr == null) {
 			throw new IllegalArgumentException("Option value cannot be null");
 		}
 
-		Matcher matcher = OPTION_REGEX.matcher(property);
+		Matcher matcher = CUSTOM_OPTION_REGEX.matcher(customOptionStr.trim());
 		if (!matcher.find()) {
-			throw new IllegalArgumentException("Wrong consumer start option format. Option = '" + property + "'");
+			throw new IllegalArgumentException("Wrong consumer custom start option format. Option = '" + customOptionStr + "'");
 		}
 
-		startOffset = 0L;
-		partition = ALL_PARTITIONS;
-		// RESTART, LATEST, EARLIEST
-		if (matcher.group(1) != null) {
-			startFrom = StartFrom.valueOf(matcher.group(1).toUpperCase());
-			return;
-		}
-
-		// CUSTOM:offset
-		if (matcher.group(2) != null) {
-			startFrom = StartFrom.CUSTOM;
-			startOffset = Long.valueOf(matcher.group(3));
-			return;
-		}
-
-		// partition:CUSTOM:offset
-		if (matcher.group(4) != null) {
-			startFrom = StartFrom.CUSTOM;
-			partition = Integer.valueOf(matcher.group(5));
-			startOffset = Long.valueOf(matcher.group(6));
-		}
+		startFrom = StartFrom.CUSTOM;
+		partition = Integer.valueOf(matcher.group(1));
+		startOffset = Long.valueOf(matcher.group(2));
 	}
 
-	public static Map<Integer, ConsumerStartOption> fromConfig(String configStr) throws IllegalArgumentException {
+	/**
+	 * Constructor for start option that applied for all partitions
+	 * @param startFrom start option
+	 */
+	public ConsumerStartOption(StartFrom startFrom) {
+		this(ALL_PARTITIONS, startFrom, 0L);
+	}
+
+	/**
+	 * Creates a map of start options. The key is a partition number or -1 that means applying for all partitions. The value is a start option.
+	 * @param startOptionStr start option: RESTART, EARLIEST, LATEST or CUSTOM
+	 * @param customStartOptionsFileStr absolute path to custom start options config file, used when @param startOptionStr is CUSTOM
+	 * @return map of start options or empty map in case of parsing error
+	 * @throws IllegalArgumentException in case of wrong option value or problem with custom config file reading
+	 */
+	public static Map<Integer, ConsumerStartOption> fromConfig(String startOptionStr, String customStartOptionsFileStr) throws IllegalArgumentException {
 		final Map<Integer, ConsumerStartOption> config = new HashMap<>();
-		// set 'RESTART' option by default
-		config.put(ALL_PARTITIONS, RESTART_OPTION);
 
-		if (StringUtils.isEmpty(configStr)) {
-			logger.info("Consumer start option or start configuration file is not defined. Consumer will use 'RESTART' option by default");
-			return config;
+		if (StringUtils.isEmpty(startOptionStr)) {
+			logger.info("Consumer start option or start configuration file is not defined. " + RESTART_BY_DEFAULT_MSG);
+			return Collections.emptyMap();
 		}
 
-		File configFile = new File(configStr);
-		ConsumerStartOption startFromOption = null;
+		StartFrom startOption;
 		try {
-			startFromOption = new ConsumerStartOption(configStr);
+			startOption = StartFrom.valueOf(startOptionStr.toUpperCase());
 		} catch (IllegalArgumentException e) {
-			if (!configFile.exists()) {
-				logger.warn("Wrong consumer start option '{}'. Consumer will use 'RESTART' option by default", configStr, e);
-				return config;
+			throw new IllegalArgumentException("Wrong consumer start option. Option = '" + startOptionStr + "'", e);
+		}
+
+		if (startOption == StartFrom.CUSTOM) {
+			if (StringUtils.isEmpty(customStartOptionsFileStr)) {
+				logger.warn("Consumer custom start options configuration file is not specified. " + RESTART_BY_DEFAULT_MSG);
+				return Collections.emptyMap();
 			}
-		}
+ 			File configFile = new File(customStartOptionsFileStr);
+			if (!configFile.exists()) {
+				logger.warn("Consumer custom start options configuration file {} doesn't exist." +
+						RESTART_BY_DEFAULT_MSG, configFile.getPath());
+				return Collections.emptyMap();
+			}
 
-		if (startFromOption != null) {
-			config.put(ALL_PARTITIONS, startFromOption);
-			return config;
-		}
-
-		if (!configFile.exists()) {
-			logger.warn("Consumer start options configuration file {} doesn't exist." +
-					"Consumer will use 'RESTART' option by default", configFile.getPath());
-			return config;
-		}
-
-		config.clear();
-		//read custom option from file
-		try {
-			List<String> lines = Files.readAllLines(configFile.toPath());
-			lines.stream()
-					//filter empty lines and comments (lines starts with '#')
-					.filter(line -> !line.isEmpty() && !line.startsWith("#"))
-					.forEach(line -> {
-						ConsumerStartOption option = new ConsumerStartOption(line);
-						config.put(option.getPartition(), option);
-					});
-		} catch (IllegalArgumentException e) {
-			logger.warn("Wrong consumer custom start option in file '{}'. Consumer will use 'RESTART' option by default", configStr, e);
-			config.clear();
-		} catch (IOException e) {
-			String message = "Unable to read Consumer start options configuration file from '" + configFile.getPath() + "'";
-			logger.error(message);
-			throw new IllegalArgumentException(message);
-		}
-
-		// use 'RESTART' option if custom config is empty
-		if (config.isEmpty()) {
-			logger.warn("Consumer custom start config is empty. Consumer will use 'RESTART' option by default");
-			config.put(ALL_PARTITIONS, RESTART_OPTION);
+			//read custom option from file
+			try {
+				List<String> lines = Files.readAllLines(configFile.toPath());
+				lines.stream()
+						//filter empty lines and comments (lines starts with '#')
+						.filter(line -> !line.isEmpty() && !line.startsWith("#"))
+						.forEach(line -> {
+							ConsumerStartOption option = new ConsumerStartOption(line);
+							config.put(option.getPartition(), option);
+						});
+			} catch (IllegalArgumentException e) {
+				logger.warn("Wrong consumer custom start option in file '{}'. " + RESTART_BY_DEFAULT_MSG, startOptionStr, e);
+				config.clear();
+			} catch (IOException e) {
+				String message = "Unable to read Consumer start options configuration file from '" + configFile.getPath() + "'";
+				logger.error(message);
+				throw new IllegalArgumentException(message);
+			}
+		} else {
+			config.put(ALL_PARTITIONS, new ConsumerStartOption(startOption));
 		}
 
 		return config;

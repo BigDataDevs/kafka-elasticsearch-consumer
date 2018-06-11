@@ -69,7 +69,8 @@ public class ConsumerManager {
     @Value("${kafka.consumer.property.prefix:consumer.kafka.property.}")
     private String consumerKafkaPropertyPrefix;
 
-    private String consumerStartOptionsConfig;
+    private String consumerStartOption;
+    private String consumerCustomStartOptionsFilePath;
 
     private ExecutorService consumersThreadPool = null;
     private List<ConsumerWorker> consumers = new ArrayList<>();
@@ -80,11 +81,15 @@ public class ConsumerManager {
     public ConsumerManager() {
     }
 
-    public void setConsumerStartOptionsConfig(String consumerStartOptionsConfig) {
-        this.consumerStartOptionsConfig = consumerStartOptionsConfig;
+    public void setConsumerStartOption(String consumerStartOption) {
+        this.consumerStartOption = consumerStartOption;
     }
 
-    private void init() {
+	public void setConsumerCustomStartOptionsFilePath(String consumerCustomStartOptionsFilePath) {
+		this.consumerCustomStartOptionsFilePath = consumerCustomStartOptionsFilePath;
+	}
+
+	private void init() {
         logger.info("init() is starting ....");
         kafkaProperties = new Properties();
         kafkaProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBrokersList);
@@ -98,7 +103,7 @@ public class ConsumerManager {
         consumerKafkaPropertyPrefix = consumerKafkaPropertyPrefix.endsWith(PROPERTY_SEPARATOR) ? consumerKafkaPropertyPrefix : consumerKafkaPropertyPrefix + PROPERTY_SEPARATOR;
         extractAndSetKafkaProperties(applicationProperties, kafkaProperties, consumerKafkaPropertyPrefix);
         int consumerPoolCount = kafkaConsumerPoolCount;
-        Map<Integer, ConsumerStartOption> consumerStartOptions = ConsumerStartOption.fromConfig(consumerStartOptionsConfig);
+        Map<Integer, ConsumerStartOption> consumerStartOptions = ConsumerStartOption.fromConfig(consumerStartOption, consumerCustomStartOptionsFilePath);
         determineOffsetForAllPartitionsAndSeek(consumerStartOptions, null);
         initConsumers(consumerPoolCount);
     }

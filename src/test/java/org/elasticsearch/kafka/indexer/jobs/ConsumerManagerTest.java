@@ -49,7 +49,7 @@ public class ConsumerManagerTest {
 
 	@Test
 	public void testRestartOffsets() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("RESTART");
+		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("RESTART", null);
 		CONSUMER.rebalance(PARTITIONS);
 		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
 		for (TopicPartition topicPartition: PARTITIONS) {
@@ -59,7 +59,7 @@ public class ConsumerManagerTest {
 
 	@Test
 	public void testAllLatestOffsets() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("LATEST");
+		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("LATEST", null);
 		CONSUMER.rebalance(PARTITIONS);
 		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
 		for (TopicPartition topicPartition: PARTITIONS) {
@@ -69,7 +69,7 @@ public class ConsumerManagerTest {
 
 	@Test
 	public void testAllEarliestOffsets() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("EARLIEST");
+		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("EARLIEST", null);
 		CONSUMER.rebalance(PARTITIONS);
 		CONSUMER.seekToEnd(PARTITIONS);
 		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
@@ -79,19 +79,20 @@ public class ConsumerManagerTest {
 	}
 
 	@Test
-	public void testAllCustomOffsets() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("CUSTOM:500");
+	public void testCustomOffsetsNoConfig() {
+		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("CUSTOM", null);
 		CONSUMER.rebalance(PARTITIONS);
 		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
 		for (TopicPartition topicPartition: PARTITIONS) {
-			Assert.assertEquals(500L, CONSUMER.position(topicPartition));
+			Assert.assertEquals(BEGINNING_OFFSET_POSITION, CONSUMER.position(topicPartition));
 		}
 	}
 
 	@Test
 	public void testCustomOffsetsFromFileNotEnoughPartitions() {
 		//Test custom start options and with not enough partitions defined, so 'RESTART' option will be used for all partitions
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("src/test/resources/test-start-options-custom.config");
+		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("CUSTOM",
+				"src/test/resources/test-start-options-custom.config");
 		Assert.assertEquals(configMap.size(), 2);
 		CONSUMER.rebalance(PARTITIONS);
 		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
@@ -102,7 +103,8 @@ public class ConsumerManagerTest {
 
 	@Test
 	public void testCustomOffsetsFromFile() {
-		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("src/test/resources/test-start-options-custom-5-partitions.config");
+		Map<Integer, ConsumerStartOption> configMap = ConsumerStartOption.fromConfig("CUSTOM",
+				"src/test/resources/test-start-options-custom-5-partitions.config");
 		CONSUMER.rebalance(PARTITIONS);
 		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(configMap, CONSUMER);
 		for (TopicPartition topicPartition: PARTITIONS) {
