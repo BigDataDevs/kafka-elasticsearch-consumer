@@ -7,7 +7,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.elasticsearch.kafka.indexer.jobs.ConsumerStartOption.StartOption;
+import org.elasticsearch.kafka.indexer.jobs.StartOptionParser.StartOption;
 import org.elasticsearch.kafka.indexer.service.IMessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +110,7 @@ public class ConsumerManager {
         consumerKafkaPropertyPrefix = consumerKafkaPropertyPrefix.endsWith(PROPERTY_SEPARATOR) ? consumerKafkaPropertyPrefix : consumerKafkaPropertyPrefix + PROPERTY_SEPARATOR;
         extractAndSetKafkaProperties(applicationProperties, kafkaProperties, consumerKafkaPropertyPrefix);
         int consumerPoolCount = kafkaConsumerPoolCount;
-        determineOffsetForAllPartitionsAndSeek(ConsumerStartOption.getStartOption(consumerStartOption), null);
+        determineOffsetForAllPartitionsAndSeek(StartOptionParser.getStartOption(consumerStartOption), null);
         initConsumers(consumerPoolCount);
     }
 
@@ -152,6 +152,11 @@ public class ConsumerManager {
         logger.info("shutdownConsumers() finished");
     }
 
+    /**
+     * Determines start offsets for kafka partitions and seek to that offsets
+     * @param startOption start option
+     * @param consumer null for real consumer or {@link org.apache.kafka.clients.consumer.MockConsumer} for testing purposes
+     */
     public void determineOffsetForAllPartitionsAndSeek(StartOption startOption, Consumer<String, String> consumer) {
         logger.info("in determineOffsetForAllPartitionsAndSeek(): ");
         if (startOption == StartOption.RESTART) {
@@ -159,6 +164,7 @@ public class ConsumerManager {
         	return;
         }
 
+        // use real consumer if no other (e.g. mocked) is passed as parameter
         if (consumer == null) {
             consumer = new KafkaConsumer<>(kafkaProperties);
         }
@@ -175,7 +181,7 @@ public class ConsumerManager {
 
         switch (startOption) {
             case CUSTOM:
-                Map<Integer, Long> customOffsetsMap = ConsumerStartOption.getCustomStartOffsets(consumerCustomStartOptionsFilePath);
+                Map<Integer, Long> customOffsetsMap = StartOptionParser.getCustomStartOffsets(consumerCustomStartOptionsFilePath);
 
                 //apply custom start offset options to partitions from file
                 if (customOffsetsMap.size() == assignedTopicPartitions.size()) {

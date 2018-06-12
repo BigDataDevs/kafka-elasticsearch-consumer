@@ -16,12 +16,12 @@ import java.util.stream.Collectors;
 /**
  * Created by Vitalii Cherniak on 04.10.16.
  */
-public class ConsumerStartOption {
-	private static final Logger logger = LoggerFactory.getLogger(ConsumerStartOption.class);
+public class StartOptionParser {
+	private static final Logger logger = LoggerFactory.getLogger(StartOptionParser.class);
 	private static final String RESTART_BY_DEFAULT_MSG = "Consumer will use 'RESTART' option by default";
 
 	/**
-	 * Creates StartOption from @String value
+	 * Creates StartOption from {@link String} value
 	 * @param startOptionStr start option: RESTART, EARLIEST, LATEST or CUSTOM
 	 * @return StartOption
 	 * @throws IllegalArgumentException in case of wrong option value

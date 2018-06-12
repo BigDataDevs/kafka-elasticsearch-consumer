@@ -3,7 +3,7 @@ package org.elasticsearch.kafka.indexer.jobs;
 import org.apache.kafka.clients.consumer.MockConsumer;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
-import org.elasticsearch.kafka.indexer.jobs.ConsumerStartOption.StartOption;
+import org.elasticsearch.kafka.indexer.jobs.StartOptionParser.StartOption;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -99,7 +99,7 @@ public class ConsumerManagerTest {
 
 	@Test
 	public void testCustomOffsetsFromFile() {
-		Map<Integer, Long> expectedOffsets = ConsumerStartOption.getCustomStartOffsets("src/test/resources/test-start-options-custom-5-partitions.properties");
+		Map<Integer, Long> expectedOffsets = StartOptionParser.getCustomStartOffsets("src/test/resources/test-start-options-custom-5-partitions.properties");
 		CONSUMER_MANAGER.setConsumerCustomStartOptionsFilePath("src/test/resources/test-start-options-custom-5-partitions.properties");
 		CONSUMER.rebalance(PARTITIONS);
 		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.CUSTOM, CONSUMER);
