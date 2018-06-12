@@ -79,11 +79,4 @@ public class StartOptionParser {
 
 		return customStartOffsets;
 	}
-
-	public enum StartOption {
-		CUSTOM,
-		EARLIEST,
-		LATEST,
-		RESTART
-	}
 }

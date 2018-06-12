@@ -3,7 +3,6 @@ package org.elasticsearch.kafka.indexer.jobs;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.elasticsearch.kafka.indexer.jobs.StartOptionParser.StartOption;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -15,36 +14,36 @@ public class StartOptionParserTest {
 
 	@Test
 	public void testRestartOption() {
-		StartOptionParser.StartOption startOption = StartOptionParser.getStartOption("RESTART");
+		StartOption startOption = StartOptionParser.getStartOption("RESTART");
 		Assert.assertEquals(StartOption.RESTART, startOption);
 	}
 
 	@Test
 	public void testEarliestOption() {
-		StartOptionParser.StartOption startOption = StartOptionParser.getStartOption("EARLIEST");
+		StartOption startOption = StartOptionParser.getStartOption("EARLIEST");
 		Assert.assertEquals(StartOption.EARLIEST, startOption);
 	}
 
 	@Test
 	public void testLatestOption() {
-		StartOptionParser.StartOption startOption = StartOptionParser.getStartOption("LATEST");
+		StartOption startOption = StartOptionParser.getStartOption("LATEST");
 		Assert.assertEquals(StartOption.LATEST, startOption);
 	}
 
 	@Test
 	public void testCustomOption() {
-		StartOptionParser.StartOption startOption = StartOptionParser.getStartOption("CUSTOM");
+		StartOption startOption = StartOptionParser.getStartOption("CUSTOM");
 		Assert.assertEquals(StartOption.CUSTOM, startOption);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testWrongOption() {
-		StartOptionParser.StartOption startOption = StartOptionParser.getStartOption("sferggbgg");
+		StartOption startOption = StartOptionParser.getStartOption("sferggbgg");
 	}
 
 	@Test
 	public void testEmptyOption() {
-		StartOptionParser.StartOption startOption = StartOptionParser.getStartOption("");
+		StartOption startOption = StartOptionParser.getStartOption("");
 		Assert.assertEquals(StartOption.RESTART, startOption);
 	}
 

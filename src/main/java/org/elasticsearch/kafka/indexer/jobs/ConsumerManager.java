@@ -7,7 +7,6 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.elasticsearch.kafka.indexer.jobs.StartOptionParser.StartOption;
 import org.elasticsearch.kafka.indexer.service.IMessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

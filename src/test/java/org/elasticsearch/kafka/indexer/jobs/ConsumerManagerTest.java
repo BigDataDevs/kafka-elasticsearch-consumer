@@ -3,7 +3,6 @@ package org.elasticsearch.kafka.indexer.jobs;
 import org.apache.kafka.clients.consumer.MockConsumer;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
-import org.elasticsearch.kafka.indexer.jobs.StartOptionParser.StartOption;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
