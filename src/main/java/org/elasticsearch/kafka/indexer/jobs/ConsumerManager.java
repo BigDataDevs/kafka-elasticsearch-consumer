@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.elasticsearch.kafka.indexer.service.IMessageHandler;
@@ -109,7 +110,7 @@ public class ConsumerManager {
         consumerKafkaPropertyPrefix = consumerKafkaPropertyPrefix.endsWith(PROPERTY_SEPARATOR) ? consumerKafkaPropertyPrefix : consumerKafkaPropertyPrefix + PROPERTY_SEPARATOR;
         extractAndSetKafkaProperties(applicationProperties, kafkaProperties, consumerKafkaPropertyPrefix);
         int consumerPoolCount = kafkaConsumerPoolCount;
-        determineOffsetForAllPartitionsAndSeek(StartOptionParser.getStartOption(consumerStartOption), null);
+        determineOffsetForAllPartitionsAndSeek(StartOptionParser.getStartOption(consumerStartOption));
         initConsumers(consumerPoolCount);
     }
 
@@ -154,19 +155,15 @@ public class ConsumerManager {
     /**
      * Determines start offsets for kafka partitions and seek to that offsets
      * @param startOption start option
-     * @param consumer null for real consumer or {@link org.apache.kafka.clients.consumer.MockConsumer} for testing purposes
      */
-    public void determineOffsetForAllPartitionsAndSeek(StartOption startOption, Consumer<String, String> consumer) {
+    public void determineOffsetForAllPartitionsAndSeek(StartOption startOption) {
         logger.info("in determineOffsetForAllPartitionsAndSeek(): ");
         if (startOption == StartOption.RESTART) {
         	logger.info("startOption is empty or set to RESTART - consumers will start from RESTART for all partitions");
         	return;
         }
 
-        // use real consumer if no other (e.g. mocked) is passed as parameter
-        if (consumer == null) {
-            consumer = new KafkaConsumer<>(kafkaProperties);
-        }
+        Consumer<String, String> consumer = getConsumerInstance(kafkaProperties);
         consumer.subscribe(Arrays.asList(kafkaTopic));
 
         //Make init poll to get assigned partitions
@@ -212,6 +209,9 @@ public class ConsumerManager {
                 return;
         }
 
+        Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = new HashMap<>();
+        assignedTopicPartitions.forEach(partition -> offsetsToCommit.put(partition, new OffsetAndMetadata(consumer.position(partition))));
+        consumer.commitSync(offsetsToCommit);
         consumer.commitSync();
         for (TopicPartition topicPartition : assignedTopicPartitions) {
             logger.info("Offset for partition: {} is moved from : {} to {}",
@@ -219,6 +219,10 @@ public class ConsumerManager {
         }
 
         consumer.close();
+    }
+
+    public Consumer<String, String> getConsumerInstance(Properties properties) {
+        return new KafkaConsumer<>(properties);
     }
 
     @PostConstruct

@@ -35,6 +35,7 @@ public class ConsumerWorker implements Runnable {
 			long pollIntervalMs, IMessageHandler messageHandler) {
 		this.messageHandler = messageHandler;
 		kafkaProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, consumerInstanceName + "-" + consumerId);
+		kafkaProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
 		this.consumerId = consumerId;
 		this.kafkaTopic = kafkaTopic;

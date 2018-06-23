@@ -6,6 +6,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,7 +19,7 @@ import java.util.Set;
  */
 public class ConsumerManagerTest {
 	private static final String TOPIC = "testTopic";
-	private static final ConsumerManager CONSUMER_MANAGER = new ConsumerManager();
+	private static final ConsumerManager CONSUMER_MANAGER = Mockito.spy(ConsumerManager.class);
 	private static final MockConsumer<String, String> CONSUMER = new MockConsumer<String, String>(OffsetResetStrategy.EARLIEST) {
 		@Override
 		public synchronized void close() {
@@ -46,12 +47,14 @@ public class ConsumerManagerTest {
 		PARTITIONS.forEach(topicPartition -> END_OFFSETS.put(topicPartition, END_OFFSET_POSITION));
 		CONSUMER.updateBeginningOffsets(BEGINNING_OFFSETS);
 		CONSUMER.updateEndOffsets(END_OFFSETS);
+
+		Mockito.doReturn(CONSUMER).when(CONSUMER_MANAGER).getConsumerInstance(Mockito.anyObject());
 	}
 
 	@Test
 	public void testRestartOffsets() {
 		CONSUMER.rebalance(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.RESTART, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.RESTART);
 		for (TopicPartition topicPartition: PARTITIONS) {
 			Assert.assertEquals(BEGINNING_OFFSET_POSITION, CONSUMER.position(topicPartition));
 		}
@@ -60,7 +63,7 @@ public class ConsumerManagerTest {
 	@Test
 	public void testAllLatestOffsets() {
 		CONSUMER.rebalance(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.LATEST, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.LATEST);
 		for (TopicPartition topicPartition: PARTITIONS) {
 			Assert.assertEquals(END_OFFSET_POSITION, CONSUMER.position(topicPartition));
 		}
@@ -70,7 +73,7 @@ public class ConsumerManagerTest {
 	public void testAllEarliestOffsets() {
 		CONSUMER.rebalance(PARTITIONS);
 		CONSUMER.seekToEnd(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.EARLIEST, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.EARLIEST);
 		for (TopicPartition topicPartition: PARTITIONS) {
 			Assert.assertEquals(BEGINNING_OFFSET_POSITION, CONSUMER.position(topicPartition));
 		}
@@ -79,7 +82,7 @@ public class ConsumerManagerTest {
 	@Test
 	public void testCustomOffsetsNoConfig() {
 		CONSUMER.rebalance(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.CUSTOM, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.CUSTOM);
 		for (TopicPartition topicPartition: PARTITIONS) {
 			Assert.assertEquals(BEGINNING_OFFSET_POSITION, CONSUMER.position(topicPartition));
 		}
@@ -90,7 +93,7 @@ public class ConsumerManagerTest {
 		//Test custom start options and with not enough partitions defined, so 'RESTART' option will be used for all partitions
 		CONSUMER_MANAGER.setConsumerCustomStartOptionsFilePath("src/test/resources/test-start-options-custom.properties");
 		CONSUMER.rebalance(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.CUSTOM, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.CUSTOM);
 		for (TopicPartition topicPartition: PARTITIONS) {
 			Assert.assertEquals(BEGINNING_OFFSET_POSITION, CONSUMER.position(topicPartition));
 		}
@@ -101,7 +104,7 @@ public class ConsumerManagerTest {
 		Map<Integer, Long> expectedOffsets = StartOptionParser.getCustomStartOffsets("src/test/resources/test-start-options-custom-5-partitions.properties");
 		CONSUMER_MANAGER.setConsumerCustomStartOptionsFilePath("src/test/resources/test-start-options-custom-5-partitions.properties");
 		CONSUMER.rebalance(PARTITIONS);
-		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.CUSTOM, CONSUMER);
+		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.CUSTOM);
 		for (TopicPartition topicPartition: PARTITIONS) {
 			Assert.assertEquals(expectedOffsets.get(topicPartition.partition()).longValue(), CONSUMER.position(topicPartition));
 		}
