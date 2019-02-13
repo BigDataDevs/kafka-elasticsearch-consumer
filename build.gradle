@@ -39,7 +39,7 @@ ext {
     slf4j_version = '1.7.25'
     logback_version = '1.2.3'
     kafka_version = '1.0.1'
-    elasticsearch_version = '6.2.3'
+    elasticsearch_version = '6.6.0'
 
 }
 
