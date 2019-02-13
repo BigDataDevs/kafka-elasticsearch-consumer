@@ -11,6 +11,7 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.transport.NoNodeAvailableException;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.kafka.indexer.exception.IndexerESNotRecoverableException;
 import org.elasticsearch.kafka.indexer.exception.IndexerESRecoverableException;
 import org.slf4j.Logger;
