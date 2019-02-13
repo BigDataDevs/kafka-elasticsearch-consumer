@@ -62,7 +62,7 @@
 
 # Versions
 
-* Kafka Version: 1.0.x
+* Kafka Version: 2.1.x
 
 * ElasticSearch: 6.2.x
 

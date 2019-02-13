@@ -53,10 +53,14 @@ public class ConsumerManagerTest {
 
 	@Test
 	public void testRestartOffsets() {
+		Map<TopicPartition, Long> offsetBeforeSeek = new HashMap<>();
+		for (TopicPartition topicPartition: PARTITIONS) {
+			offsetBeforeSeek.put(topicPartition, CONSUMER.position(topicPartition));
+		}
 		CONSUMER.rebalance(PARTITIONS);
 		CONSUMER_MANAGER.determineOffsetForAllPartitionsAndSeek(StartOption.RESTART);
-		for (TopicPartition topicPartition: PARTITIONS) {
-			Assert.assertEquals(BEGINNING_OFFSET_POSITION, CONSUMER.position(topicPartition));
+		for (TopicPartition topicPartition: offsetBeforeSeek.keySet()) {
+			Assert.assertEquals(offsetBeforeSeek.get(topicPartition).longValue(), CONSUMER.position(topicPartition));
 		}
 	}
 
