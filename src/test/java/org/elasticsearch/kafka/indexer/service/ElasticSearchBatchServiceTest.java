@@ -9,6 +9,7 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse.Failure;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.transport.NoNodeAvailableException;
 import org.elasticsearch.kafka.indexer.exception.IndexerESNotRecoverableException;
@@ -77,7 +78,7 @@ public class ElasticSearchBatchServiceTest {
 		// verify we called the prepareIndex with eventUUID
 		Mockito.verify(elasticSearchClientService, Mockito.times(1)).prepareIndex(testIndexName, testIndexType,
 				eventUUID);
-		Mockito.verify(mockedIndexRequestBuilder, Mockito.times(1)).setSource(message);
+		Mockito.verify(mockedIndexRequestBuilder, Mockito.times(1)).setSource(message, XContentType.JSON);
 		// verify that routing is set to use eventUUID
 		Mockito.verify(mockedIndexRequestBuilder, Mockito.times(1)).setRouting(eventUUID);
 	}
