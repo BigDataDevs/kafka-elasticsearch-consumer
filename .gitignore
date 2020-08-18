@@ -11,6 +11,7 @@ docker/logs
 docker/src
 docker/elasticsearch/data
 
+**/*DS_Store
 *.iml
 kafkaESConsumerLocal.properties
 dependency-reduced-pom.xml

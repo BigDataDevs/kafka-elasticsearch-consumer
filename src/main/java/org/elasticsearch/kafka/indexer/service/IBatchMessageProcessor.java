@@ -54,7 +54,7 @@ public interface IBatchMessageProcessor {
      * Returning FALSE means that the offsets will NOT be committed and events from the previous poll will
      * be re-processed
      * @param consumerId
-     * @param previousPollEndPosition
+     * @param pollEndPosition
      * @return boolean shouldCommitThisPoll
      * @throws Exception
      */

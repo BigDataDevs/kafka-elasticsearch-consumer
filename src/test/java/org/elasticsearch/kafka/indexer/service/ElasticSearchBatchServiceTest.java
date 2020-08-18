@@ -83,12 +83,6 @@ public class ElasticSearchBatchServiceTest {
 		Mockito.verify(mockedIndexRequestBuilder, Mockito.times(1)).setRouting(eventUUID);
 	}
 
-	/**
-	 * Test method for
-	 * {@link org.elasticsearch.kafka.indexer.service.impl.BasicMessageHandler#postToElasticSearch()}
-	 * .
-	 */
-
 	@Test
 	public void testPostOneBulkRequestToES_NoNodeException() {
 		// simulate failure due to ES cluster (or part of it) not being
